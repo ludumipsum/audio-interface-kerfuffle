@@ -2,8 +2,14 @@
 extern crate cfg_if;
 extern crate web_sys;
 extern crate wasm_bindgen;
+extern crate serde;
+extern crate serde_json;
 
 use wasm_bindgen::prelude::*;
+use web_sys::AudioContext;
+
+mod audio;
+use crate::audio::AUDIO_STR;
 
 cfg_if! {
     // When the `console_error_panic_hook` feature is enabled, we can call the
@@ -27,20 +33,41 @@ cfg_if! {
     }
 }
 
-// Called by our JS entry point to run the example.
 #[wasm_bindgen]
-pub fn run() -> Result<(), JsValue> {
+pub fn get_audio() -> Vec<f32> {
     set_panic_hook();
 
-    let window = web_sys::window().expect("should have a Window");
-    let document = window.document().expect("should have a Document");
+    serde_json::from_str(AUDIO_STR).expect("failed to deserialize audio data")
+}
 
-    let p: web_sys::Node = document.create_element("p")?.into();
-    p.set_text_content(Some("Hello from Rust, WebAssembly, and Webpack!"));
+#[wasm_bindgen]
+pub fn play_audio() {
+    set_panic_hook();
 
-    let body = document.body().expect("should have a body");
-    let body: &web_sys::Node = body.as_ref();
-    body.append_child(&p)?;
+    let audio = get_audio();
+    let ctx = AudioContext::new().expect("failed to create webaudio context");
 
-    Ok(())
+    let buffer = ctx
+        .create_buffer(2 as u32, audio.len() as u32, 44_100 as f32)
+        .expect("failed to create audio buffer");
+    let mut left_channel = buffer
+        .get_channel_data(0)
+        .expect("failed to get left_channel");
+    let mut right_channel = buffer
+        .get_channel_data(1)
+        .expect("failed to get right_channel");
+
+    for (i, sample) in audio.iter().enumerate() {
+        left_channel[i] = *sample;
+        right_channel[i] = *sample;
+    }
+
+    let source = ctx
+        .create_buffer_source()
+        .expect("failed to spawn new webaudio buffer source node");
+    source.set_buffer(Some(&buffer));
+    source
+        .connect_with_audio_node(&ctx.destination())
+        .expect("failed to connect the source to the ctx destination");
+    source.start().expect("failed to start webaudio source");
 }
