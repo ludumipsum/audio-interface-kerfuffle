@@ -35,6 +35,18 @@
       </tr>
     </tbody>
   </table>
+
+  <br>
+
+  <p>
+    The four buttons implement four different processes for inputting audio data into an AudioContext. Two of them are executed in native JS event handlers, and two call into Rust-generated WASM that leverages web-sys. Two of them use <code>getChannelData</code> to get a <code>Float32Array</code> and copy data into that typed array, and two of them use <code>copyToChannel</code> to hand data to buffers.
+  </p>
+  <p>
+    It should be noted that some browsers don't implement <code>copyToChannel</code> (mobile safari, I'm lookin' at you), so both the native JS and the web-sys WASM versions will fail to produce audio.
+  </p>
+  <p>
+    <strong>The native JS <code>getChannelData</code> version should always work. The web-sys WASM <code>get_channel_data</code> version will never work.</strong> This is because JS' <code>getChannelData</code> returns a <code>Float32Array</code>, which points back to the <code>ArrayBuffer</code> stored in the audio buffer in  question --- modifying what is returned by <code>audio_buffer.GetChannelData()</code> will modify the state of <code>audio_buffer</code>. web-sys' <code>get_channel_data</code> returns a <code>Vec&lt;f32&gt;</code> -- not a <code>&amp;Vec&lt;f32&gt;</code> -- so a <em>copy</em> of the backing buffer is created --- modifying what is returned by <code>audio_buffer.get_channel_data().unwrap()</code> <strong>will not</strong> modify the state of <code>audio_buffer</code>.
+  </p>
 </body>
 
 </html>
