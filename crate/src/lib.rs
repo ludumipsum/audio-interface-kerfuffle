@@ -76,25 +76,18 @@ pub fn play_audio_get_channel_data() {
 pub fn play_audio_copy_to_channel() {
     set_panic_hook();
 
-    let audio = get_audio();
+    let mut audio = get_audio();
     let ctx = AudioContext::new().expect("failed to create webaudio context");
 
     let buffer = ctx
         .create_buffer(2 as u32, audio.len() as u32, 44_100 as f32)
         .expect("failed to create audio buffer");
 
-    let mut left = Vec::with_capacity(audio.len());
-    let mut right = Vec::with_capacity(audio.len());
-    for sample in audio {
-        left.push(sample);
-        right.push(sample);
-    }
-
     buffer
-        .copy_to_channel(&mut left, 0)
+        .copy_to_channel(&mut audio, 0)
         .expect("failed to load data into the left channel");
     buffer
-        .copy_to_channel(&mut right, 1)
+        .copy_to_channel(&mut audio, 1)
         .expect("failed to load data into the right channel");
 
     let source = ctx
