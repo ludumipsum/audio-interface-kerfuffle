@@ -41,7 +41,7 @@ pub fn get_audio() -> Vec<f32> {
 }
 
 #[wasm_bindgen]
-pub fn play_audio() {
+pub fn play_audio_get_channel_data() {
     set_panic_hook();
 
     let audio = get_audio();
@@ -61,6 +61,41 @@ pub fn play_audio() {
         left_channel[i] = *sample;
         right_channel[i] = *sample;
     }
+
+    let source = ctx
+        .create_buffer_source()
+        .expect("failed to spawn new webaudio buffer source node");
+    source.set_buffer(Some(&buffer));
+    source
+        .connect_with_audio_node(&ctx.destination())
+        .expect("failed to connect the source to the ctx destination");
+    source.start().expect("failed to start webaudio source");
+}
+
+#[wasm_bindgen]
+pub fn play_audio_copy_to_channel() {
+    set_panic_hook();
+
+    let audio = get_audio();
+    let ctx = AudioContext::new().expect("failed to create webaudio context");
+
+    let buffer = ctx
+        .create_buffer(2 as u32, audio.len() as u32, 44_100 as f32)
+        .expect("failed to create audio buffer");
+
+    let mut left = Vec::with_capacity(audio.len());
+    let mut right = Vec::with_capacity(audio.len());
+    for sample in audio {
+        left.push(sample);
+        right.push(sample);
+    }
+
+    buffer
+        .copy_to_channel(&mut left, 0)
+        .expect("failed to load data into the left channel");
+    buffer
+        .copy_to_channel(&mut right, 1)
+        .expect("failed to load data into the right channel");
 
     let source = ctx
         .create_buffer_source()

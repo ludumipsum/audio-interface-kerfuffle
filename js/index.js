@@ -1,29 +1,33 @@
 let wasm = {}
 const play_js_button = document.getElementById("play_js")
-const play_wasm_button = document.getElementById("play_wasm")
+const play_wasm1_button = document.getElementById("play_wasm1")
+const play_wasm2_button = document.getElementById("play_wasm2")
 
 import("../crate/pkg")
   .then(w => {
     console.log("WASM loaded, ready to play")
     wasm = w
     play_js_button.removeAttribute("disabled")
-    play_wasm_button.removeAttribute("disabled")
+    play_wasm1_button.removeAttribute("disabled")
+    play_wasm2_button.removeAttribute("disabled")
   })
   .catch(err => {
     console.error("Failed to load WASM:", err)
   })
 
 play_js_button.addEventListener("click", _ => {
-  console.log("Playing audio from js...")
-  js_play_audio()
+  js_play_audio_getChannelData()
 })
 
-play_wasm_button.addEventListener("click", _ => {
-  console.log("Playing audio from wasm...")
-  wasm.play_audio()
+play_wasm1_button.addEventListener("click", _ => {
+  wasm.play_audio_get_channel_data()
 })
 
-function js_play_audio() {
+play_wasm2_button.addEventListener("click", _ => {
+  wasm.play_audio_copy_to_channel()
+})
+
+function js_play_audio_getChannelData() {
   let audio = wasm.get_audio()
   let ctx = new AudioContext();
 
